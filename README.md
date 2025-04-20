@@ -1,1 +1,1 @@
-# MinaraSp25Deployment
+Minara calendar deployment
