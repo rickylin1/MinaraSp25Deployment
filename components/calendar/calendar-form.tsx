@@ -9,7 +9,7 @@ enum CalendarColor {
   White = 'white'
 }
 
-enum VisibilityTypes {
+export enum VisibilityTypes {
   Invitees = 'invitees',
   Org_Members = 'org_members',
   Everyone = 'everyone'

@@ -4,6 +4,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Users, MapPin, AlignLeft, Hash, Globe, Palette, Eye } from "lucide-react";
+import { VisibilityTypes } from "@/components/calendar/calendar-form";
+
 
 interface OrgFormProps {
   formData: {
@@ -14,7 +16,7 @@ interface OrgFormProps {
     links?: string;
     members?: string;
     color?: string;
-    visibility?: string;
+    visibility?: VisibilityTypes;
     audience?: string;
   };
   setFormData: React.Dispatch<React.SetStateAction<OrgFormProps["formData"]>>;
@@ -142,7 +144,7 @@ export function OrgForm({ formData, setFormData }: OrgFormProps) {
             <Button
               key={v}
               variant={formData.visibility === v ? "default" : "outline"}
-              onClick={() => setFormData((p) => ({ ...p, visibility: v }))}
+              onClick={() => setFormData((p) => ({ ...p, visibility: v as VisibilityTypes}))}
               className={`text-xs px-4 py-2 rounded-lg border-2 ${formData.visibility === v
                 ? "bg-[#4B2065] text-white"
                 : "bg-white text-[#4B2065] border-[#4B2065]"
