@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
 serve(async (_req)=>{
-  const response = await fetch("https://courses.illinois.edu/cisapi/schedule/2024/fall/CS");
+  const response = await fetch("https://courses.illinois.edu/cisapp/explorer/schedule/2025.xml");
   const xml = await response.text();
   // Parse the XML with DOMParser
   const doc = new DOMParser().parseFromString(xml, "text/xml");
