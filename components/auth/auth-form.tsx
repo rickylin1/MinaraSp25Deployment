@@ -14,14 +14,12 @@ export function AuthForm() {
   async function handleGoogleSignIn() {
     setIsLoading(true);
     try {
-      const redirectUrl = process.env.NODE_ENV === 'production'   //figure out whether to redirect to either losthost or vercel 
-      ? 'https://your-app.vercel.app/auth/callback'
-      : `${window.location.origin}/auth/callback`;
+     
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
