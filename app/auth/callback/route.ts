@@ -3,6 +3,12 @@ import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
+const BASE_URL =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:3000"
+    : "https://www.minara.app";
+
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
@@ -53,11 +59,12 @@ export async function GET(request: Request) {
     //   console.log('Upsert result:', result);
     // }
 
-    console.log('Auth callback - Redirecting to:', `${origin}/calendar?sync=success`);
-    return NextResponse.redirect(`${origin}/calendar?sync=success`)
+    console.log('Auth callback - Redirecting to:', `${BASE_URL}/calendar?sync=success`);
+    return NextResponse.redirect(`${BASE_URL}/calendar?sync=success`)
+
   } catch (error) {
     console.error('Auth callback error:', error)
-    console.log('Auth callback - Error redirecting to:', `${origin}/calendar?error=auth_failed`);
-    return NextResponse.redirect(`${origin}/calendar?error=auth_failed`)
+    console.log('Auth callback - Error redirecting to:', `${BASE_URL}/calendar?error=auth_failed`);
+    return NextResponse.redirect(`${BASE_URL}/calendar?error=auth_failed`)
   }
 }
