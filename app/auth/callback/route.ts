@@ -15,6 +15,8 @@ export async function GET(request: Request) {
   
   try {
     const supabase = createClient()
+    console.log("Authentication loading")
+    console.log(code)
     const { data, error } = await supabase.auth.exchangeCodeForSession(code as string)
     
     if (error) throw error
