@@ -23,6 +23,7 @@ import {
   Users,
   AlignLeft,
   Hash,
+  Palette
 } from "lucide-react";
 import {
   Select,
@@ -31,7 +32,7 @@ import {
   SelectContent,
   SelectItem
 } from "@/components/ui/select";
-
+import { getColorName } from './views/color-picker';
 
 interface EventFormProps {
   event?: Event | null;
@@ -42,6 +43,7 @@ interface EventFormProps {
 type EventFormState = Partial<Event> & {
   guests: string;
   tags: string;
+  // colors: string; 
 };
 
 export function EventForm({ event, isOpen, onClose }: EventFormProps) {
@@ -60,7 +62,8 @@ export function EventForm({ event, isOpen, onClose }: EventFormProps) {
     calendar_id: event?.calendar_id || selectedCalendarIds[0],
     timezone: userTimezone,
     guests: '',
-    tags: '',
+    tags: ''
+    // colors: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,6 +138,8 @@ export function EventForm({ event, isOpen, onClose }: EventFormProps) {
 
   if (!isOpen) return null;
 
+  const labelStyle = "flex items-center gap-2 text-sm font-medium text-[#2F2E2C]";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6 p-4 text-sm text-black font-medium">
       <div className="space-y-2">
@@ -206,6 +211,30 @@ export function EventForm({ event, isOpen, onClose }: EventFormProps) {
           </Select>
         </div>
       </div>
+
+      {/* <div className="space-y-2">
+        <label className={labelStyle}>
+          <Palette className="w-4 h-4" />
+          pick a base color for your calendar
+        </label>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            id="color-input"
+            value={formData.colors || "#000000"}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                colors: e.target.value,
+              }))
+            }
+            className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer"
+          />
+          <span className="text-sm">
+            {getColorName(formData.colors || "#000000")}
+          </span>
+        </div>
+      </div> */}
 
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -316,7 +345,12 @@ export function EventForm({ event, isOpen, onClose }: EventFormProps) {
         </div>
       </div>
 
-      <div className="flex justify-between pt-4">
+      <div className="flex justify-end gap-2 pt-2">
+        {/* Cancel/Exit Button */}
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+
         {event && (
           <Button
             type="button"
@@ -326,7 +360,8 @@ export function EventForm({ event, isOpen, onClose }: EventFormProps) {
             Delete
           </Button>
         )}
-        <Button type="submit">
+
+        <Button type="submit" className="bg-[#4B2065] text-white hover:bg-[#3e1b55]">
           {event ? 'Update' : 'Create'}
         </Button>
       </div>

@@ -14,13 +14,7 @@ interface ToggleFormProps {
 }
 
 export function ToggleForm({ isOpen, onClose, onSave }: ToggleFormProps) {
-  const { toast } = useToast();
-
-  enum CalendarColor {
-    Color = 'color',
-    Black = 'black',
-    White = 'white'
-  }
+  const { toast } = useToast(); 
 
   enum VisibilityTypes {
     Invitees = 'invitees',
@@ -33,9 +27,8 @@ export function ToggleForm({ isOpen, onClose, onSave }: ToggleFormProps) {
     description?: string | undefined;
     tags?: string | undefined; 
     members?: string | undefined; 
-    colors?: CalendarColor; 
+    colors?: string; 
     visibility?: VisibilityTypes;
-    // Add other optional fields as needed
   }
 
   // Use a single state object for all form data
@@ -44,7 +37,7 @@ export function ToggleForm({ isOpen, onClose, onSave }: ToggleFormProps) {
     description: "",
     tags: "",
     members: "",
-    colors: CalendarColor.Color,
+    colors: "",
     visibility: VisibilityTypes.Invitees
   };
 

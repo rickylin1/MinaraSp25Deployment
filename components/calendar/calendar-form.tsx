@@ -2,12 +2,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Users, AlignLeft, Hash, Palette, Eye } from "lucide-react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { getColorName } from "./views/color-picker";
 
-enum CalendarColor {
-  Color = 'color',
-  Black = 'black',
-  White = 'white'
-}
+// enum CalendarColor {
+//   Black = 'black',
+//   White = 'white',
+//   Purple = 'purple',
+// }
 
 export enum VisibilityTypes {
   Invitees = 'invitees',
@@ -21,7 +22,7 @@ interface CalendarFormProps {
     tags?: string;
     description?: string;
     members?: string;
-    colors?: CalendarColor;
+    colors?: string;
     visibility?: VisibilityTypes;
   };
   setFormData: React.Dispatch<React.SetStateAction<CalendarFormProps["formData"]>>;
@@ -100,13 +101,14 @@ export function CalendarForm({ formData, setFormData }: CalendarFormProps) {
       </div>
 
       {/* Color */}
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <label className={labelStyle}>
           <Palette className="w-4 h-4" />
           pick a base color for your calendar
         </label>
         <div className="flex gap-2 items-center">
-          <div className="w-5 h-5 bg-black rounded border" />
+          <div className="w-5 h-5 bg-black rounded border" 
+          style={{ backgroundColor: formData.colors || "black" }}/>
           <select
             id="color-input"
             value={formData.colors || ""}
@@ -125,6 +127,29 @@ export function CalendarForm({ formData, setFormData }: CalendarFormProps) {
               </option>
             ))}
           </select>
+        </div>
+      </div> */}
+      <div className="space-y-2">
+        <label className={labelStyle}>
+          <Palette className="w-4 h-4" />
+          pick a base color for your calendar
+        </label>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            id="color-input"
+            value={formData.colors || "#000000"}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                colors: e.target.value,
+              }))
+            }
+            className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer"
+          />
+          <span className="text-sm">
+            {getColorName(formData.colors || "#000000")}
+          </span>
         </div>
       </div>
 
