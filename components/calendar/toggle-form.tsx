@@ -42,7 +42,7 @@ export function ToggleForm({ isOpen, onClose, onSave }: ToggleFormProps) {
   };
 
   const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [selectedForm, setSelectedForm] = useState<"calendar" | "organization">("calendar");
+  const [selectedForm, setSelectedForm] = useState<"calendar" | "organixzation">("calendar");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

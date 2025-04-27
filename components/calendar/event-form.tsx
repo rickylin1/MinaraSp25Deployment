@@ -76,10 +76,10 @@ export function EventForm({ event, isOpen, onClose }: EventFormProps) {
       });
       return;
     }
-
+  
     const startTime = new Date(formData.start_time!);
     const endTime = new Date(formData.end_time!);
-
+  
     if (endTime < startTime) {
       toast({
         title: "Error",
@@ -88,23 +88,25 @@ export function EventForm({ event, isOpen, onClose }: EventFormProps) {
       });
       return;
     }
-
+  
     try {
+      const { guests, tags, ...cleanedData } = formData;
+  
       if (event) {
-        await updateEvent(event.id, formData);
+        await updateEvent(event.id, cleanedData);
         toast({
           title: "Event updated",
           description: "Your event has been updated successfully.",
         });
       } else {
-        const { guests, tags, ...cleanedData } = formData;
         await createEvent(cleanedData);
         toast({
           title: "Event created",
           description: "Your event has been created successfully.",
         });
       }
-      eventsQuery.refetch(); // Refetch to update UI with server data
+  
+      eventsQuery.refetch();
       onClose();
     } catch (error) {
       console.error('Error saving event:', error);
@@ -115,6 +117,7 @@ export function EventForm({ event, isOpen, onClose }: EventFormProps) {
       });
     }
   };
+  
 
   const handleDelete = async () => {
     if (!event) return;
