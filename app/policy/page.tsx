@@ -1,6 +1,16 @@
+"use client"; 
+
+import { Button } from '@/components/ui/button';
 import Head from 'next/head';
+import { useRouter } from 'next/navigation';
 
 export default function PrivacyPolicyPage() {
+  const router = useRouter(); 
+
+  const handleExit = () => {
+    router.push('/calendar'); 
+  };
+  
   return (
     <>
       <Head>
@@ -27,14 +37,14 @@ export default function PrivacyPolicyPage() {
             <p className="text-sm text-gray-500">Last updated: April 20, 2025</p>
           </header>
 
-          <section className="prose prose-lg">
-            <h2>Privacy Policy</h2>
+          <section className="prose prose-lg text-justify">
+            <h2><b>Privacy Policy</b></h2>
             <p>
               This Privacy Policy describes Our policies and procedures on the collection, use and
               disclosure of Your information when You use the Service and tells You about Your privacy
               rights and how the law protects You.
             </p>
-            <p>
+            <p className="mt-2">
               We use Your Personal data to provide and improve the Service. By using the Service, You
               agree to the collection and use of information in accordance with this Privacy Policy.
               This Privacy Policy has been created with the help of the{' '}
@@ -42,19 +52,22 @@ export default function PrivacyPolicyPage() {
                 href="https://www.freeprivacypolicy.com/free-privacy-policy-generator/"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="text-blue-600 underline"
               >
                 Free Privacy Policy Generator
               </a>
               .
             </p>
-            <h2>Interpretation and Definitions</h2>
-            <h3>Interpretation</h3>
+            <p className="mb-4"></p>
+            <h2><b>Interpretation and Definitions</b></h2>
+            <h3><u>Interpretation</u></h3>
             <p>
               The words of which the initial letter is capitalized have meanings defined under the
               following conditions. The following definitions shall have the same meaning regardless
               of whether they appear in singular or in plural.
             </p>
-            <h3>Definitions</h3>
+            <p className="mb-2"></p>
+            <h3><u>Definitions</u></h3>
             <p>For the purposes of this Privacy Policy:</p>
             <ul className="list-disc ml-6">
               <li><strong>Account</strong>: a unique account created for You to access our Service.</li>
@@ -67,13 +80,11 @@ export default function PrivacyPolicyPage() {
               <li><strong>Service Provider</strong>: third-party entities processing data on behalf of the Company.</li>
               <li><strong>Third-party Social Media Service</strong>: social networks enabling login to our Service.</li>
               <li><strong>Usage Data</strong>: data collected automatically from usage of the Service.</li>
-              <li><strong>Website</strong>: Minara, accessible from <a href="https://www.minara.app/calendar">https://www.minara.app/calendar</a></li>
+              <li><strong>Website</strong>: Minara, accessible from <a href="https://www.minara.app/calendar" className="text-blue-600 underline">https://www.minara.app/calendar</a></li>
               <li><strong>You</strong>: the individual accessing the Service.</li>
             </ul>
 
-            {/* Add more sections below as needed */}
-
-            <p className="mt-8 text-sm">
+            <p className="mt-6 text-sm">
               For full details, please see the full privacy policy at{' '}
               <a
                 href="https://www.freeprivacypolicy.com/live/1aeec1e5-6193-4264-a3af-353ee76bf7c2"
@@ -87,7 +98,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <footer className="mt-16 border-t pt-4 text-sm text-gray-500">
+          <footer className="mt-8 border-t pt-4 text-sm text-gray-500">
             <p>
               Generated using{' '}
               <a
@@ -102,6 +113,13 @@ export default function PrivacyPolicyPage() {
           </footer>
         </div>
       </main>
+
+      {/* Exit Button */}
+      <div className="absolute top-8 right-12 flex justify-end gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={handleExit}>
+          <span className="font-bold">X</span>
+        </Button>
+      </div>
     </>
   );
 }

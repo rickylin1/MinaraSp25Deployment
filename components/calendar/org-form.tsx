@@ -4,6 +4,9 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Users, MapPin, AlignLeft, Hash, Globe, Palette, Eye } from "lucide-react";
+import { VisibilityTypes } from "@/components/calendar/calendar-form";
+import { getColorName } from "./views/color-picker";
+
 
 interface OrgFormProps {
   formData: {
@@ -13,8 +16,8 @@ interface OrgFormProps {
     tags?: string;
     links?: string;
     members?: string;
-    color?: string;
-    visibility?: string;
+    colors?: string;
+    visibility?: VisibilityTypes;
     audience?: string;
   };
   setFormData: React.Dispatch<React.SetStateAction<OrgFormProps["formData"]>>;
@@ -113,22 +116,28 @@ export function OrgForm({ formData, setFormData }: OrgFormProps) {
       </div>
 
       {/* Color */}
-      <div className="space-y-1">
+      <div className="space-y-2">
         <label className={labelStyle}>
           <Palette className="w-4 h-4" />
-          pick a base color for your organization
+          pick a base color for your calendar
         </label>
-        <Select onValueChange={(value) => setFormData((p) => ({ ...p, color: value }))}>
-          <SelectTrigger className="w-40 bg-[#FCF5E8] border border-[#F4C787] text-sm rounded-md px-3 py-2 text-[#717075] placeholder:font-medium">
-            <SelectValue placeholder="color" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="black">Black</SelectItem>
-            <SelectItem value="purple">Purple</SelectItem>
-            <SelectItem value="blue">Blue</SelectItem>
-            <SelectItem value="green">Green</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            id="color-input"
+            value={formData.colors || "#000000"}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                colors: e.target.value,
+              }))
+            }
+            className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer"
+          />
+          <span className="text-sm">
+            {getColorName(formData.colors || "#000000")}
+          </span>
+        </div>
       </div>
 
       {/* Visibility */}
@@ -142,7 +151,7 @@ export function OrgForm({ formData, setFormData }: OrgFormProps) {
             <Button
               key={v}
               variant={formData.visibility === v ? "default" : "outline"}
-              onClick={() => setFormData((p) => ({ ...p, visibility: v }))}
+              onClick={() => setFormData((p) => ({ ...p, visibility: v as VisibilityTypes}))}
               className={`text-xs px-4 py-2 rounded-lg border-2 ${formData.visibility === v
                 ? "bg-[#4B2065] text-white"
                 : "bg-white text-[#4B2065] border-[#4B2065]"
@@ -173,9 +182,9 @@ export function OrgForm({ formData, setFormData }: OrgFormProps) {
         </Select>
       </div>
 
-      <div className="pt-4 flex justify-end">
+      {/* <div className="pt-4 flex justify-end">
         <Button className="bg-orange-400 hover:bg-orange-500">create organization</Button>
-      </div>
+      </div> */}
     </div>
   );
 }

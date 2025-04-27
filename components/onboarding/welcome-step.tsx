@@ -17,7 +17,6 @@ export function WelcomeStep({ onComplete, onNext }: WelcomeStepProps) {
   const { signIn } = useAuth();
   
   const { toast } = useToast();
-  const supabase = createClient();
 
   async function handleGoogleSignIn() {
     setIsLoading(true);
