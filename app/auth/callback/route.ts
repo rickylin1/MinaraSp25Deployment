@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 //     ? "http://localhost:3000"
 //     : "https://www.minara.app";
 
-const ALLOWED_ORIGINS = ["https://www.https://minara-sp25-deployment-rickylin1s-projects.vercel.app/.app", "http://localhost:3000"];
+const ALLOWED_ORIGINS = ["https://www.minara.app", "http://localhost:3000"];
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
