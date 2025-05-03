@@ -119,12 +119,35 @@ export async function getEvents(
   return fetchEventsForDateRange(start, end, calendarIds);
 }
 
-export async function createEvent(event: Partial<Event>, tagIds?: string[]) {
+export async function createEvent(event: Event, tagNames?: string[]) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError) throw userError;
-  if (!user) throw new Error('Not authenticated');
+  if (userError || !user) throw userError;
 
-  console.log('Creating event with data:', event);
+  if ((!event.calendar_id && !event.org_id) || (event.calendar_id && event.org_id)) {
+    throw new Error('Event must have either calendar_id or org_id, but not both');
+  }
+
+  // Authorization check
+  if (event.calendar_id) {
+    const { data: calendar, error: calendarError } = await supabase
+      .from('calendars')
+      .select('user_id')
+      .eq('id', event.calendar_id)
+      .single();
+    if (calendarError || calendar?.user_id !== user.id) {
+      throw new Error('Not authorized to create event for this calendar');
+    }
+  } else if (event.org_id) {
+    const { data: member, error: memberError } = await supabase
+      .from('org_members')
+      .select('role')
+      .eq('org_id', event.org_id)
+      .eq('user_id', user.id)
+      .single();
+    if (memberError || member?.role !== 'admin') {
+      throw new Error('Not authorized to create event for this org');
+    }
+  }
 
   const { data: eventData, error: eventError } = await supabase
     .from('events')
@@ -132,17 +155,12 @@ export async function createEvent(event: Partial<Event>, tagIds?: string[]) {
     .select()
     .single();
 
-  if (eventError) {
-    console.error('Error creating event:', eventError);
-    throw eventError;
-  }
+  if (eventError) throw eventError;
 
-  console.log('Created event:', eventData);
-
-  if (tagIds?.length) {
-    const eventTags = tagIds.map(tagId => ({
+  if (tagNames?.length) {
+    const eventTags = tagNames.map(tagName => ({
       event_id: eventData.id,
-      tag_id: tagId,
+      tag_name: tagName,
     }));
 
     const { error: tagError } = await supabase
@@ -155,7 +173,71 @@ export async function createEvent(event: Partial<Event>, tagIds?: string[]) {
   return eventData as Event;
 }
 
-export async function updateEvent(id: string, event: Partial<Event>, tagIds?: string[]) {
+export async function updateEvent(id: string, event: Partial<Event>, tagNames?: string[]) {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) throw userError;
+  delete event.user_id; // Remove user_id from the event object to avoid overwriting
+  delete event.created_at; // Remove created_at to avoid overwriting
+  event.updated_at = new Date().toISOString(); // Set updated_at to current time
+  
+  // Step 1: Fetch the existing event
+  const { data: existingEvent, error: fetchError } = await supabase
+  .from('events')
+  .select('user_id, org_id')
+  .eq('id', id)
+  .single();
+
+  if (fetchError || !existingEvent) throw new Error('Event not found');
+
+  // Step 2: Check manager permissions on the current event
+  let isAuthorized = false;
+
+  if (existingEvent.user_id === user.id) {
+    isAuthorized = true
+  } else if (existingEvent.org_id) {
+  const { data: member, error: memberError } = await supabase
+    .from('org_members')
+    .select('role')
+    .eq('org_id', existingEvent.org_id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!memberError && member?.role === 'admin') {
+    isAuthorized = true;
+  }
+  }
+
+  if (!isAuthorized) {
+  throw new Error('Not authorized to update this event');
+  }
+
+  if(event.calendar_id && event.org_id) {
+    throw new Error('Cannot update event with both calendar_id and org_id');
+  }
+
+  // Authorization check
+  if (event.calendar_id) {
+    const { data: calendar, error: calendarError } = await supabase
+      .from('calendars')
+      .select('user_id')
+      .eq('id', event.calendar_id)
+      .single();
+    if (calendarError || calendar?.user_id !== user.id) {
+      throw new Error('Not authorized to update to this calendar');
+    }
+  } 
+  else if (event.org_id) {
+    const { data: member, error: memberError } = await supabase
+      .from('org_members')
+      .select('role')
+      .eq('org_id', event.org_id)
+      .eq('user_id', user.id)
+      .single();
+    if (memberError || member?.role !== 'admin') {
+      throw new Error('Not authorized to update to this org');
+    }
+  }
+
   const { data: eventData, error: eventError } = await supabase
     .from('events')
     .update(event)
@@ -165,7 +247,7 @@ export async function updateEvent(id: string, event: Partial<Event>, tagIds?: st
 
   if (eventError) throw eventError;
 
-  if (tagIds) {
+  if (tagNames) {
     // Remove existing tags
     const { error: deleteError } = await supabase
       .from('event_tags')
@@ -175,10 +257,10 @@ export async function updateEvent(id: string, event: Partial<Event>, tagIds?: st
     if (deleteError) throw deleteError;
 
     // Add new tags
-    if (tagIds.length) {
-      const eventTags = tagIds.map(tagId => ({
+    if (tagNames.length) {
+      const eventTags = tagNames.map(tagName => ({
         event_id: id,
-        tag_id: tagId,
+        tag_name: tagName,
       }));
 
       const { error: tagError } = await supabase
@@ -193,10 +275,52 @@ export async function updateEvent(id: string, event: Partial<Event>, tagIds?: st
 }
 
 export async function deleteEvent(id: string) {
-  const { error } = await supabase
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error('Not authenticated');
+
+   const { data: existingEvent, error: fetchError } = await supabase
+  .from('events')
+  .select('user_id, org_id')
+  .eq('id', id)
+  .single();
+
+  if (fetchError || !existingEvent) throw new Error('Event not found');
+
+  // Step 2: Check manager permissions on the current event
+  let isAuthorized = false;
+
+  if (existingEvent.user_id === user.id) {
+    isAuthorized = true
+  } else if (existingEvent.org_id) {
+  const { data: member, error: memberError } = await supabase
+    .from('org_members')
+    .select('role')
+    .eq('org_id', existingEvent.org_id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!memberError && member?.role === 'admin') {
+    isAuthorized = true;
+  }
+  }
+
+  if (!isAuthorized) {
+  throw new Error('Not authorized to delete this event');
+  }
+
+  // Delete event tags
+  const { error: tagDeleteError } = await supabase
+    .from('event_tags')
+    .delete()
+    .eq('event_id', id);
+
+  if (tagDeleteError) throw tagDeleteError;
+
+  // Delete the event
+  const { error: deleteError } = await supabase
     .from('events')
     .delete()
     .eq('id', id);
 
-  if (error) throw error;
+  if (deleteError) throw deleteError;
 }

@@ -17,7 +17,7 @@ export interface Calendar {
   google_calendar_id?: string | null;
   created_at: string;
   updated_at: string;
-  org_id?: string | null;
+  description?: string;
 }
 
 export interface SharedCalendar {
@@ -36,7 +36,8 @@ export interface Event {
   start_time: string;
   end_time: string;
   all_day: boolean;
-  calendar_id: string;
+  calendar_id?: string;
+  org_id?: string;
   user_id: string;
   color?: string;
   created_at: string;
@@ -45,16 +46,14 @@ export interface Event {
   recurrence_rule?: string;
 }
 
-export interface Tag {
-  id: string;
-  name: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface EventTag {
   event_id: string;
-  tag_id: string;
+  tag_name: string;
+}
+
+export interface OrgTag {
+  org_id: string;
+  tag_name: string;
 }
 
 export interface Task {
@@ -72,6 +71,11 @@ export interface Orgs {
   id: string;
   name: string;
   description: string;
+  location: string;
+  link: string;
+  color: string;
+  visibility: string;
+  audience: string;
 }
 
 export interface OrgMember {
