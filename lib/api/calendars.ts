@@ -36,13 +36,16 @@ export async function getCalendars() {
   return userCalendars || [];
 }
 
-export async function createCalendar(calendar: Calendar) {
+export async function createCalendar(calendar: Omit<Calendar, 'id'>) { 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) throw new Error('Not authenticated');
-
+  const now = new Date().toISOString();
+  calendar.updated_at = now;
+  calendar.created_at = now;
+  calendar.user_id = user.id;
   const { data, error } = await supabase
     .from('calendars')
-    .insert([{ ...calendar, user_id: user.id }])
+    .insert([calendar])
     .select()
     .single();
 
@@ -55,20 +58,18 @@ export async function updateCalendar(id: string, calendar: Partial<Calendar>) {
   if (userError || !user) throw new Error('Not authenticated');
 
   // Remove sensitive fields
-  const allowedFields: Partial<Calendar> = { ...calendar };
+  const allowedFields = { ...calendar };
 
   delete allowedFields.id;
   delete allowedFields.user_id;
   delete allowedFields.created_at;
   delete allowedFields.is_primary;
   delete allowedFields.google_calendar_id;
-
-  // Explicitly set updated_at to current time
   allowedFields.updated_at = new Date().toISOString();
 
   const { data, error } = await supabase
     .from('calendars')
-    .update(allowedFields)
+    .update([allowedFields])
     .eq('id', id)
     .eq('user_id', user.id)
     .select()

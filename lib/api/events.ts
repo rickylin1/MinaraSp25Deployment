@@ -119,7 +119,7 @@ export async function getEvents(
   return fetchEventsForDateRange(start, end, calendarIds);
 }
 
-export async function createEvent(event: Event, tagNames?: string[]) {
+export async function createEvent(event: Omit<Event, 'id'>, tagNames?: string[]) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) throw userError;
 
@@ -149,6 +149,10 @@ export async function createEvent(event: Event, tagNames?: string[]) {
     }
   }
 
+  const now = new Date().toISOString();
+  event.created_at = now;
+  event.updated_at = now;
+
   const { data: eventData, error: eventError } = await supabase
     .from('events')
     .insert([{ ...event, user_id: user.id }])
@@ -173,11 +177,13 @@ export async function createEvent(event: Event, tagNames?: string[]) {
   return eventData as Event;
 }
 
-export async function updateEvent(id: string, event: Partial<Event>, tagNames?: string[]) {
+export async function updateEvent(id: string, newevent: Partial<Event>, tagNames?: string[]) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) throw userError;
-  delete event.user_id; // Remove user_id from the event object to avoid overwriting
-  delete event.created_at; // Remove created_at to avoid overwriting
+  const event = { ...newevent };
+  delete event.id; 
+  delete event.user_id;
+  delete event.created_at;
   event.updated_at = new Date().toISOString(); // Set updated_at to current time
   
   // Step 1: Fetch the existing event
@@ -307,14 +313,6 @@ export async function deleteEvent(id: string) {
   if (!isAuthorized) {
   throw new Error('Not authorized to delete this event');
   }
-
-  // Delete event tags
-  const { error: tagDeleteError } = await supabase
-    .from('event_tags')
-    .delete()
-    .eq('event_id', id);
-
-  if (tagDeleteError) throw tagDeleteError;
 
   // Delete the event
   const { error: deleteError } = await supabase

@@ -20,13 +20,13 @@ export interface Calendar {
   description?: string;
 }
 
-export interface SharedCalendar {
-  id: string;
-  calendar_id: string;
-  shared_with: string;
-  permission_level: 'view' | 'edit' | 'admin';
-  created_at: string;
-}
+// export interface SharedCalendar {
+//   id: string;
+//   calendar_id: string;
+//   shared_with: string;
+//   permission_level: 'view' | 'edit' | 'admin';
+//   created_at: string;
+// }
 
 export interface Event {
   id: string;
@@ -70,9 +70,9 @@ export interface Task {
 export interface Orgs {
   id: string;
   name: string;
-  description: string;
-  location: string;
-  link: string;
+  description?: string;
+  location?: string;
+  link?: string;
   color: string;
   visibility: string;
   audience: string;
