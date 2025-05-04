@@ -3,13 +3,52 @@ import type { Calendar } from '@/lib/types/database';
 import type { GoogleCalendar } from '@/lib/types/calendar';
 import { isOrgAdmin } from './orgs';
 
+// Function to create a new calendar
+export async function createCalendar(calendar: Partial<Calendar>) {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    console.error('Authentication error:', userError?.message);
+    throw new Error('Not authenticated');
+  }
+
+  // Generate UUID with fallback
+  const calendarUUID = typeof crypto !== 'undefined' && crypto.randomUUID 
+    ? crypto.randomUUID() 
+    : `${Date.now()}-${Math.random().toString(36).substring(2)}`;
+  
+  // Define current timestamp
+  const now = new Date().toISOString();
+
+  const calendarData = {
+    id: calendarUUID,
+    name: calendar.name || 'Untitled Calendar',
+    color: calendar.color || '#000000',
+    user_id: user.id,
+    created_at: now
+  };
+
+  console.log('Creating calendar with data:', calendarData);
+
+  const { data, error } = await supabase
+    .from('calendars')
+    .upsert(calendarData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating calendar:', error.message, error.details);
+    throw error;
+  }
+
+  console.log('Calendar created successfully:', data);
+  return data;
+}
+
 // Function to get all calendars for the authenticated user
-// Need to add a function to get calendars for a specific org
 export async function getCalendars() {
   console.log('Getting user calendars...');
-  console.log('testing this branch')
+  console.log('testing this branch');
 
-  // Get the current user
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
@@ -19,41 +58,20 @@ export async function getCalendars() {
 
   console.log('Fetching calendars for user:', user.id);
 
-  // Fetch calendars that belong to the authenticated user
-  const { data: userCalendars, error: calendarError } = await supabase
+  const { data: userCalendars, error: schemaError } = await supabase
     .from('calendars')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: true });
 
-  if (calendarError) {
-    console.error('Error fetching user calendars:', calendarError);
-    throw calendarError;
+  if (schemaError) {
+    console.error('Error fetching user calendars:', schemaError);
+    throw schemaError;
   }
 
   console.log('User calendars:', userCalendars);
 
   return userCalendars || [];
-}
-
-export async function createCalendar(calendar: Partial<Calendar>) {
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) throw new Error('Not authenticated');
-
-  if (calendar.org_id) {
-    if (!await isOrgAdmin(calendar.org_id)) {
-      throw new Error('User is not an admin of the specified organization');
-    }
-  }
-
-  const { data, error } = await supabase
-    .from('calendars')
-    .insert([{ ...calendar, user_id: user.id }])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
 }
 
 export async function updateCalendar(id: string, calendar: Partial<Calendar>) {
@@ -63,71 +81,37 @@ export async function updateCalendar(id: string, calendar: Partial<Calendar>) {
   console.log('Updating calendar ID:', id);
   console.log('Update payload:', calendar);
 
-  if (calendar.org_id) {
-    if (!await isOrgAdmin(calendar.org_id)) {
-      throw new Error('User is not an admin of the specified organization');
-    }
-  }
-
-  // Remove sensitive fields
-  const allowedFields: Partial<Calendar> = { ...calendar };
-
-  // Remove sensitive fields
-  delete allowedFields.id;         // Prevent updating the 'id' field
-  delete allowedFields.user_id;    // Prevent updating the 'user_id' field
-  delete allowedFields.created_at; // Prevent updating the 'created_at' field
-  delete allowedFields.org_id;     // Prevent updating the 'org_id' field
-  delete allowedFields.is_primary;  // Prevent updating the 'is_primary' field
-  delete allowedFields.google_calendar_id; // Prevent updating the 'google_calendar_id' field
-
-  // Fetch org_id's where the user is an admin
-  const { data: orgData, error: orgError } = await supabase
-    .from('org_members')
-    .select('org_id')
-    .eq('user_id', user.id)
-    .eq('role', 'admin');
-
-  if (orgError) throw orgError;
-
-  const adminOrgIds = orgData.map((org) => org.org_id);
+  const allowedFields: Partial<Calendar> = {
+    name: calendar.name,
+    color: calendar.color
+  };
 
   const { data, error } = await supabase
     .from('calendars')
-    .update(allowedFields) // Update only the allowed fields
+    .update(allowedFields)
     .eq('id', id)
-    .or(`user_id.eq.${user.id},org_id.in.(${adminOrgIds.join(',')})`) // Either the user is the owner or the user is an admin of the org
+    .eq('user_id', user.id)
     .select()
-    .single(); // Ensures that we get a single row
+    .single();
 
   if (error) throw error;
   return data;
 }
 
-export async function deleteCalendar(id: string, calendar: Partial<Calendar>) {
+export async function deleteCalendar(id: string) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) throw new Error('Not authenticated');
-
-  if (calendar.org_id) {
-    if (!await isOrgAdmin(calendar.org_id)) {
-      throw new Error('User is not an admin of the specified organization');
-    }
-  }
 
   const { error } = await supabase
     .from('calendars')
     .delete()
     .eq('id', id)
-    .eq('user_id', user.id); // Ensure user owns the calendar
+    .eq('user_id', user.id);
 
   if (error) throw error;
 }
 
 export async function fetchGoogleCalendars(): Promise<GoogleCalendar[]> {
-  // const { data: connection } = await supabase
-  //   .from('user_connections')
-  //   .select('access_token')
-  //   .eq('provider', 'google_calendar')
-  //   .single();
   const { data, error } = await supabase.auth.getSession();
 
   if (error) { throw error; }
@@ -150,7 +134,6 @@ export async function fetchGoogleCalendars(): Promise<GoogleCalendar[]> {
     eventCount: 0,
   }));
 
-  // Fetch event counts for each calendar
   await Promise.all(calendars.map(async (calendar: GoogleCalendar) => {
     try {
       const eventsResponse = await fetch(
@@ -176,155 +159,107 @@ export async function fetchGoogleCalendars(): Promise<GoogleCalendar[]> {
 }
 
 export async function importGoogleCalendars(selectedCalendars: GoogleCalendar[], onProgress?: (progress: number) => void) {
-  // const { data: connection } = await supabase
-  //   .from('user_connections')
-  //   .select('access_token')
-  //   .eq('provider', 'google')
-  //   .single();
-
-
-
   const { data, error } = await supabase.auth.getSession();
 
   if (!data.session?.access_token) throw new Error('No access token');
   if (error) throw error;
 
-  // Store the Google Calendar connection with onConflict handling
-  // await supabase
-  //   .from('user_connections')
-  //   .upsert({
-  //     user_id: session?.user.id,
-  //     provider: 'google_calendar',
-  //     access_token: connection.access_token,
-  //     created_at: new Date().toISOString(),
-  //     updated_at: new Date().toISOString()
-  //   }, {
-  //     onConflict: 'user_id,provider'
-  //   });
-
   const totalCalendars = selectedCalendars.length;
   let completedCalendars = 0;
 
   for (const calendar of selectedCalendars) {
-    // Generate a new UUID for each calendar
     const calendarUUID = crypto.randomUUID();
 
     const exists = await isCalendarInDatabase(calendar.id);
-    if(exists) {
+    if (exists) {
       console.error("Calendar already exists");
       continue;
-    } else{
-    // Create or update the calendar in our database
-    const { data: calendarData, error: calendarError } = await supabase
-      .from('calendars')
-      .upsert({
-        id: calendarUUID,
-        name: calendar.summary,
-        color: calendar.backgroundColor,
-        user_id: data.session?.user.id,
-        is_primary: false,
-        google_calendar_id: calendar.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-    
+    } else {
+      const { data: calendarData, error: schemaError } = await supabase
+        .from('calendars')
+        .upsert({
+          id: calendarUUID,
+          name: calendar.summary,
+          color: calendar.backgroundColor,
+          user_id: data.session?.user.id,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
 
-    // if (calendarError) {
-    //   console.error('Error saving calendar:', calendarError);
-    //   continue;
-    // }
-
-    
-    // Fetch and save events for this calendar
-    const eventsResponse = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?` + 
-      `timeMin=${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}&` + 
-      `singleEvents=true&` + 
-      `maxResults=2500`,
-      {
-        headers: {
-          Authorization: `Bearer ${data.session?.provider_token}`,
-        },
+      if (schemaError) {
+        console.error('Error saving calendar:', schemaError);
+        continue;
       }
-    );
 
-    if (!eventsResponse.ok) {
-      console.error('Error fetching events:', await eventsResponse.text());
-      continue;
-    }
-    
-    const eventsData = await eventsResponse.json();
-    
-    // Delete existing events for this calendar (if any)
-    await supabase
-      .from('events')
-      .delete()
-      .eq('calendar_id', calendarData.id);
+      const eventsResponse = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?` + 
+        `timeMin=${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}&` + 
+        `singleEvents=true&` + 
+        `maxResults=2500`,
+        {
+          headers: {
+            Authorization: `Bearer ${data.session?.provider_token}`,
+          },
+        }
+      );
 
-    // Filter and transform events
-    const events = eventsData.items
-      .filter((event: any) => {
-        if (event.status === 'cancelled') return false;
-        const eventStart = new Date(event.start?.dateTime || event.start?.date);
-        return eventStart >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      })
-      .map((event: any) => ({
-        id: crypto.randomUUID(),
-        calendar_id: calendarData.id,
-        user_id: data.session?.user.id,
-        title: event.summary || 'Untitled Event',
-        description: event.description || null,
-        location: event.location || null,
-        start_time: event.start?.dateTime || new Date(event.start?.date).toISOString(),
-        end_time: event.end?.dateTime || new Date(event.end?.date).toISOString(),
-        all_day: !event.start?.dateTime,
-        // google_event_id: event.id,
-        // not in the Database yet 
-        recurrence_rule: event.recurringEventId ? null : (event.recurrence?.[0]?.replace('RRULE:', '') || null),
-        color: "red", // added
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        timezone: 'UTC', // You might want to pass this as a parameter
-      }));
-
-    if (events.length > 0) {
-      const { error: eventError } = await supabase.from('events').insert(events);
-      if (eventError) {
-        console.error('Error inserting events:', eventError);
+      if (!eventsResponse.ok) {
+        console.error('Error fetching events:', await eventsResponse.text());
+        continue;
       }
+
+      const eventsData = await eventsResponse.json();
+
+      await supabase
+        .from('events')
+        .delete()
+        .eq('calendar_id', calendarData.id);
+
+      const events = eventsData.items
+        .filter((event: any) => {
+          if (event.status === 'cancelled') return false;
+          const eventStart = new Date(event.start?.dateTime || event.start?.date);
+          return eventStart >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        })
+        .map((event: any) => ({
+          id: crypto.randomUUID(),
+          calendar_id: calendarData.id,
+          user_id: data.session?.user.id,
+          title: event.summary || 'Untitled Event',
+          description: event.description || null,
+          location: event.location || null,
+          start_time: event.start?.dateTime || new Date(event.start?.date).toISOString(),
+          end_time: event.end?.dateTime || new Date(event.end?.date).toISOString(),
+          all_day: !event.start?.dateTime,
+          recurrence_rule: event.recurringEventId ? null : (event.recurrence?.[0]?.replace('RRULE:', '') || null),
+          color: "red",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          timezone: 'UTC',
+        }));
+
+      if (events.length > 0) {
+        const { error: eventError } = await supabase.from('events').insert(events);
+        if (eventError) {
+          console.error('Error inserting events:', eventError);
+        }
+      }
+
+      completedCalendars++;
+      onProgress?.((completedCalendars / totalCalendars) * 100);
     }
-
-    completedCalendars++;
-    onProgress?.((completedCalendars / totalCalendars) * 100);
   }
-  }
-
 
   return await getCalendars();
-
 }
 
 export async function checkGoogleCalendarSync(): Promise<boolean> {
-  const { data, error } = await supabase.auth.getSession()
-  if (error)
-  {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
     console.error('Error fetching session:', error);
     return false;
   }
-  // // Check for Google Calendar connection only
-  // const { data: connection, error: connectionError } = await supabase
-  //   .from('user_connections')
-  //   .select('access_token')
-  //   .eq('user_id', session.user.id)
-  //   .eq('provider', 'google_calendar')
-  //   .maybeSingle();
-  
-  // if (connectionError || !connection?.access_token) {
-  //   return false;
-  // }
-
   return true;
 }
 
@@ -337,16 +272,13 @@ export async function isCalendarInDatabase(googleCalendarId: string): Promise<bo
   const { data, error } = await supabase
     .from('calendars')
     .select('id')
-    .eq('google_calendar_id', googleCalendarId)
+    .eq('name', googleCalendarId) // Changed to check name instead of google_calendar_id
     .maybeSingle();
 
   if (error) {
-    console.error('Error checking Google Calendar ID:', error);
+    console.error('Error checking calendar:', error);
     return false;
   }
 
-
-  return !!data
-
-
+  return !!data;
 }
