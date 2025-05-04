@@ -81,18 +81,20 @@ export function CalendarForm({ formData, setFormData }: CalendarFormProps) {
       </div>
 
       {/* Tags */}
-      {/* <div className="space-y-2">
+      {/* <div className='space-y-2'>
         <label className={labelStyle}>
-          <Hash className="w-4 h-4" />
+          <Hash className='w-4 h-4' />
           add tags
         </label>
         <Input
-          type="text"
-          placeholder="which filters can others use to find your org?"
-          autoComplete="off"
+          type='text'
+          placeholder='which filters can others use to find your org?'
+          autoComplete='off'
           className={inputStyle}
-          value={formData.description || ""}
-          onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+          value={formData.description || ''}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, description: e.target.value }))
+          }
         />
       </div> */}
 

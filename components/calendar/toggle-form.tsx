@@ -1,44 +1,28 @@
 'use client';
 
 import { useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/lib/hooks/use-toast';
 import { CalendarForm } from './calendar-form';
 import { OrgForm } from './org-form';
+import { createCalendar } from '@/lib/api/calendars';
 
 interface ToggleFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: (updatedName: string, type: 'calendar' | 'organization') => void;
 }
 
-export function ToggleForm({ isOpen, onClose, onSave }: ToggleFormProps) {
+export function ToggleForm({ isOpen, onClose }: ToggleFormProps) {
   const { toast } = useToast();
 
-  enum VisibilityTypes {
-    Invitees = 'invitees',
-    Org_Members = 'org_members',
-    Everyone = 'everyone',
-  }
-
   interface FormData {
-    name?: string | undefined;
-    description?: string | undefined;
-    tags?: string | undefined;
-    members?: string | undefined;
+    name?: string;
     colors?: string;
-    visibility?: VisibilityTypes;
   }
 
-  // Use a single state object for all form data
   const initialFormData: FormData = {
     name: '',
-    description: '',
-    tags: '',
-    members: '',
-    colors: '',
-    visibility: VisibilityTypes.Invitees,
+    colors: '#000000',
   };
 
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -46,27 +30,44 @@ export function ToggleForm({ isOpen, onClose, onSave }: ToggleFormProps) {
     'calendar'
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (formData.name != null && formData.name.trim() === '') {
+    if (!formData.name || formData.name.trim() === '') {
       toast({
         title: 'Error',
-        description: 'Event name cannot be empty.',
+        description: 'Calendar name cannot be empty.',
         variant: 'destructive',
       });
       return;
     }
 
-    onSave?.(formData.name ?? '', selectedForm);
-    toast({
-      title: 'Saved',
-      description: `Saved the ${selectedForm} form with the name: "${formData.name}".`,
-    });
+    try {
+      if (selectedForm === 'calendar') {
+        const calendarData = await createCalendar({
+          name: formData.name,
+          color: formData.colors,
+        });
+        toast({
+          title: 'Success',
+          description: `Created calendar: "${calendarData.name}".`,
+        });
+      } else {
+        toast({
+          title: 'Info',
+          description: 'Organization creation not implemented yet.',
+        });
+      }
 
-    // Reset all form fields
-    setFormData({ name: '' });
-    onClose();
+      setFormData(initialFormData);
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: `Failed to create ${selectedForm}: ${error.message}`,
+        variant: 'destructive',
+      });
+    }
   };
 
   if (!isOpen) return null;
