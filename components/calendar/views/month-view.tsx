@@ -32,6 +32,24 @@ export function MonthView() {
     });
   };
 
+  const formatTime = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  };
+
+  const calculateTooltipPosition = (day: Date) => {
+    const dayIndex = day.getDate(); 
+    const rowHeight = 100; 
+    const gridHeight = 700; 
+    const position = (dayIndex * rowHeight) / gridHeight; 
+  
+    if (position > 0.75) {
+      return "bottom-full"; 
+    } else {
+      return "top-full";
+    }
+  };
+
   return (
     <div className="grid grid-cols-7 gap-1">
       {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
@@ -55,13 +73,25 @@ export function MonthView() {
           </div>
           <div className="space-y-1">
             {getEventsForDay(day).map((event) => (
-              <button
-                key={event.id}
-                className="w-full text-left text-sm p-1 bg-[#FEF8EE] border border-orange-300 rounded-md text-gray-800 truncate"
-                onClick={() => setSelectedEvent(event)}
-              >
+              <div className="relative group">
+                <button
+                  key={event.id}
+                  className="w-full text-left text-sm p-1 bg-[#FEF8EE] border border-orange-300 rounded-md text-gray-800 truncate"
+                  onClick={() => setSelectedEvent(event)}
+                >
                 {event.title}
-              </button>
+                </button>
+
+                <div className={cn(
+                  "absolute z-50 w-auto max-w-lg min-w-[16rem] p-4 text-sm text-gray-900 bg-white border border-gray-200 rounded-xl shadow-md opacity-0 group-hover:opacity-100 transition duration-200 pointer-events-none space-y-2 whitespace-normal break-words",
+                  calculateTooltipPosition(day)
+                )}>
+                  <div className="text-base font-semibold">{event.title}</div>
+                  <div><span className="font-medium text-gray-600"><strong>Time:</strong></span> {formatTime(event.start_time)} – {formatTime(event.end_time)}</div>
+                  <div><span className="font-medium text-gray-600"><strong>Location:</strong></span> {event.location ? (event.location) : 'No location available'}</div>
+                  <div><span className="font-medium text-gray-600"><strong>Description:</strong></span> {event.description ? (event.description.length > 100 ? `${event.description.slice(0, 100)}...` : event.description) : 'No description available'} </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>

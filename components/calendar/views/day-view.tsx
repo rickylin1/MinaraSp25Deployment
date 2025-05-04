@@ -51,13 +51,7 @@ export function DayView() {
             </div>
             <div className="flex-1 min-h-[60px] relative">
               {getEventsForHour(hour).map((event) => (
-                // <button
-                //   key={event.id}
-                //   className="absolute left-0 right-0 m-1 p-2 text-sm bg-[#FEF8EE] border border-orange-300 rounded-md text-gray-800 rounded"
-                //   onClick={() => setSelectedEvent(event)}
-                // >
-                //   {event.title}
-                // </button>
+
                 <div className="relative group">
                   <button
                     key={event.id}
