@@ -119,7 +119,7 @@ export async function getEvents(
   return fetchEventsForDateRange(start, end, calendarIds);
 }
 
-export async function createEvent(event: Omit<Event, 'id'>, tagNames?: string[]) {
+export async function createEvent(event: Partial<Omit<Event, 'id'>>, tagNames?: string[]) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) throw userError;
 
