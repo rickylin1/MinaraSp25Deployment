@@ -181,6 +181,11 @@ function TimeSlot({ day, hour, events, onEventClick }: {
     return eventStart.getTime() < slotEnd.getTime() && eventEnd.getTime() > slotStart.getTime();
   });
 
+  const formatTime = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  };
+
   return (
     <div className="flex h-12 border-b border-r relative group hover:bg-accent/50 transition-colors">
       <div className="flex-1 border-l">
@@ -194,20 +199,28 @@ function TimeSlot({ day, hour, events, onEventClick }: {
           const topOffset = (eventStartHour - hour) * 100;
 
           return (
-            <button
-              key={event.id}
-              onClick={() => onEventClick(event)}
-              className="absolute left-0 right-0 mx-1 p-1 text-xs text-left flex items-start justify-start bg-[#FEF8EE] border border-orange-300 rounded-md text-gray-800 truncate shadow-sm"
-              style={{
-                top: `${topOffset}%`,
-                height: `${height}%`,
-                minHeight: '18px',
-                zIndex: 10
-              }}
-              title={`${event.title}${event.location ? ` - ${event.location}` : ''}`}
-            >
+            <div>
+              <button
+                key={event.id}
+                onClick={() => onEventClick(event)}
+                className="absolute left-0 right-0 mx-1 p-1 text-xs text-left flex items-start justify-start bg-[#FEF8EE] border border-orange-300 rounded-md text-gray-800 truncate shadow-sm"
+                style={{
+                  top: `${topOffset}%`,
+                  height: `${height}%`,
+                  minHeight: '18px',
+                  zIndex: 10
+                }}
+              >
               {event.title}
-            </button>
+              </button>
+
+              <div className="absolute left-10 bottom-full mb-2 z-50 w-auto max-w-lg min-w-[16rem] p-4 text-sm text-gray-900 bg-white border border-gray-200 rounded-xl shadow-md opacity-0 group-hover:opacity-100 transition duration-200 pointer-events-none space-y-2 whitespace-normal break-words">
+                <div className="text-base font-semibold">{event.title}</div>
+                <div><span className="font-medium text-gray-600"><strong>Time:</strong></span> {formatTime(event.start_time)} – {formatTime(event.end_time)}</div>
+                <div><span className="font-medium text-gray-600"><strong>Location:</strong></span> {event.location ? (event.location) : 'No location available'}</div>
+                <div><span className="font-medium text-gray-600"><strong>Description:</strong></span> {event.description ? (event.description.length > 100 ? `${event.description.slice(0, 100)}...` : event.description) : 'No description available'} </div>
+              </div>
+            </div>
           );
         })}
       </div>
