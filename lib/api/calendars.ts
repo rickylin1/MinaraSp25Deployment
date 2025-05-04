@@ -36,19 +36,16 @@ export async function getCalendars() {
   return userCalendars || [];
 }
 
-export async function createCalendar(calendar: Partial<Calendar>) {
+export async function createCalendar(calendar: Omit<Calendar, 'id'>) { 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) throw new Error('Not authenticated');
-
-  if (calendar.org_id) {
-    if (!await isOrgAdmin(calendar.org_id)) {
-      throw new Error('User is not an admin of the specified organization');
-    }
-  }
-
+  const now = new Date().toISOString();
+  calendar.updated_at = now;
+  calendar.created_at = now;
+  calendar.user_id = user.id;
   const { data, error } = await supabase
     .from('calendars')
-    .insert([{ ...calendar, user_id: user.id }])
+    .insert([calendar])
     .select()
     .single();
 
@@ -60,58 +57,31 @@ export async function updateCalendar(id: string, calendar: Partial<Calendar>) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) throw new Error('Not authenticated');
 
-  console.log('Updating calendar ID:', id);
-  console.log('Update payload:', calendar);
-
-  if (calendar.org_id) {
-    if (!await isOrgAdmin(calendar.org_id)) {
-      throw new Error('User is not an admin of the specified organization');
-    }
-  }
-
   // Remove sensitive fields
-  const allowedFields: Partial<Calendar> = { ...calendar };
+  const allowedFields = { ...calendar };
 
-  // Remove sensitive fields
-  delete allowedFields.id;         // Prevent updating the 'id' field
-  delete allowedFields.user_id;    // Prevent updating the 'user_id' field
-  delete allowedFields.created_at; // Prevent updating the 'created_at' field
-  delete allowedFields.org_id;     // Prevent updating the 'org_id' field
-  delete allowedFields.is_primary;  // Prevent updating the 'is_primary' field
-  delete allowedFields.google_calendar_id; // Prevent updating the 'google_calendar_id' field
-
-  // Fetch org_id's where the user is an admin
-  const { data: orgData, error: orgError } = await supabase
-    .from('org_members')
-    .select('org_id')
-    .eq('user_id', user.id)
-    .eq('role', 'admin');
-
-  if (orgError) throw orgError;
-
-  const adminOrgIds = orgData.map((org) => org.org_id);
+  delete allowedFields.id;
+  delete allowedFields.user_id;
+  delete allowedFields.created_at;
+  delete allowedFields.is_primary;
+  delete allowedFields.google_calendar_id;
+  allowedFields.updated_at = new Date().toISOString();
 
   const { data, error } = await supabase
     .from('calendars')
-    .update(allowedFields) // Update only the allowed fields
+    .update([allowedFields])
     .eq('id', id)
-    .or(`user_id.eq.${user.id},org_id.in.(${adminOrgIds.join(',')})`) // Either the user is the owner or the user is an admin of the org
+    .eq('user_id', user.id)
     .select()
-    .single(); // Ensures that we get a single row
+    .single();
 
   if (error) throw error;
   return data;
 }
 
-export async function deleteCalendar(id: string, calendar: Partial<Calendar>) {
+export async function deleteCalendar(id: string) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) throw new Error('Not authenticated');
-
-  if (calendar.org_id) {
-    if (!await isOrgAdmin(calendar.org_id)) {
-      throw new Error('User is not an admin of the specified organization');
-    }
-  }
 
   const { error } = await supabase
     .from('calendars')
