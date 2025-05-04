@@ -36,7 +36,7 @@ export interface Event {
   start_time: string;
   end_time: string;
   all_day: boolean;
-  calendar_id?: string;
+  calendar_id: string;
   org_id?: string;
   user_id: string;
   color?: string;
