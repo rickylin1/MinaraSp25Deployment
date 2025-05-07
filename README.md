@@ -11,3 +11,7 @@ Welcome to Minara, A calendar for discovery and all your needs! This documentati
 # Features to be Implemented
 
 # Troubleshooting
+
+
+# Contact Info
+If you have any questions, feel free to reach out to either Ricky Lin (Rickyl3@illinois.edu), or Tanav Palisetti (tanavp2@illinois.edu).
