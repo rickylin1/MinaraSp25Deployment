@@ -30,6 +30,9 @@ if you want to test the app before pushing your changes to production, make sure
 
 As of now, the DB schema is not fully matching with the frontend forms. So when creating calendars/organizations the frontend form information is completely aligned with the DB schema. Can consider rewriting the DB schema and updating these fields. Tags is also not completely implemented within DB/Backend so please take a look at the entries for both. 
 
+
+There is also currently a refresh bug when adding calendars. You must refresh the page to see all available calendars.
+
 # Troubleshooting
 
 
