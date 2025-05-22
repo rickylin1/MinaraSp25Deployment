@@ -24,11 +24,15 @@ import {
   calendarsAtom,
   groupedEventsAtom
 } from '@/lib/store/atoms';
-import { EventForm } from '../event-form';
 import { useState } from 'react';
 import type { Event } from '@/lib/types/database';
 import { TimeGrid } from '../time-grid';
 import { formatInTimeZone } from 'date-fns-tz';
+
+interface WeekViewProps {
+  onSlotClick?: (date: Date) => void;
+  onEventClick?: (event: Event) => void;
+}
 
 function DayHeader({ day }: { day: Date }) {
   const isToday = isSameDay(day, new Date());
@@ -65,7 +69,7 @@ function AllDayEvents({
         (eventEnd.getTime() - eventStart.getTime()) >= 24 * 60 * 60 * 1000;
     });
   }, [events]);
-  
+
 
   const eventRows = useMemo(() => {
     const rows: Event[][] = [];
@@ -160,14 +164,20 @@ function calculateHeightPercentage(event: Event): number {
   return Math.max(0, duration * 100);
 }
 
-function TimeSlot({ day, hour, events, onEventClick }: {
+function TimeSlot({ 
+  day, 
+  hour, 
+  events, 
+  onEventClick, 
+  onSlotClick 
+}: {
   day: Date;
   hour: number;
   events: Event[];
   onEventClick: (event: Event) => void;
+  onSlotClick?: (date: Date) => void;
 }) {
   const isToday = isSameDay(day, new Date());
-
   const currentHour = new Date().getHours();
 
   const eventsInSlot = events.filter(event => {
@@ -186,8 +196,19 @@ function TimeSlot({ day, hour, events, onEventClick }: {
     return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   };
 
+  const handleSlotClick = () => {
+    if (onSlotClick) {
+      const slotDateTime = new Date(day);
+      slotDateTime.setHours(hour, 0, 0, 0);
+      onSlotClick(slotDateTime);
+    }
+  };
+
   return (
-    <div className="flex h-12 border-b border-r relative group hover:bg-accent/50 transition-colors">
+    <div
+      className="flex h-12 border-b border-r relative group hover:bg-accent/50 transition-colors cursor-pointer"
+      onClick={handleSlotClick}
+    >      
       <div className="flex-1 border-l">
         {isToday && hour === currentHour && <CurrentTimeIndicator />}
         {eventsInSlot.map((event) => {
@@ -199,11 +220,13 @@ function TimeSlot({ day, hour, events, onEventClick }: {
           const topOffset = (eventStartHour - hour) * 100;
 
           return (
-            <div>
+            <div key={event.id}>
               <button
-                key={event.id}
-                onClick={() => onEventClick(event)}
-                className="absolute left-0 right-0 mx-1 p-1 text-xs text-left flex items-start justify-start bg-[#FEF8EE] border border-orange-300 rounded-md text-gray-800 truncate shadow-sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEventClick(event);
+                }}
+                className="absolute left-0 right-0 mx-1 p-1 text-xs text-left flex items-start justify-start bg-[#FEF8EE] border border-orange-300 rounded-md text-gray-800 truncate shadow-sm hover:shadow-md transition-shadow"
                 style={{
                   top: `${topOffset}%`,
                   height: `${height}%`,
@@ -211,7 +234,7 @@ function TimeSlot({ day, hour, events, onEventClick }: {
                   zIndex: 10
                 }}
               >
-              {event.title}
+                {event.title}
               </button>
 
               <div className="absolute left-10 bottom-full mb-2 z-50 w-auto max-w-lg min-w-[16rem] p-4 text-sm text-gray-900 bg-white border border-gray-200 rounded-xl shadow-md opacity-0 group-hover:opacity-100 transition duration-200 pointer-events-none space-y-2 whitespace-normal break-words">
@@ -264,10 +287,12 @@ const CurrentTimeIndicator = () => {
 
 CurrentTimeIndicator.displayName = 'CurrentTimeIndicator';
 
-export function WeekView() {
+export function WeekView({
+  onSlotClick,
+  onEventClick,
+}: WeekViewProps) {
   const [selectedDate] = useAtom(selectedDateAtom);
   const [groupedEvents] = useAtom(groupedEventsAtom);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [userTimezone] = useAtom(userTimezoneAtom);
   const [timeZoneAbbr, setTimeZoneAbbr] = useState('UTC');
   const [isLoading] = useAtom(isLoadingAtom);
@@ -305,8 +330,12 @@ export function WeekView() {
   );
 
   const handleEventClick = useCallback((event: Event) => {
-    setSelectedEvent(event);
-  }, []);
+    onEventClick?.(event);
+  }, [onEventClick]);
+
+  const handleSlotClick = useCallback((date: Date) => {
+    onSlotClick?.(date);
+  }, [onSlotClick]);
 
   return (
     <div className="flex flex-col h-full relative">
@@ -337,13 +366,18 @@ export function WeekView() {
                   const eventsInSlot = (groupedEvents?.[dayKey]?.[hour] ?? []).filter(event => !event.all_day);
 
                   return (
-                    <TimeSlot
+                    <div
                       key={`${day.toISOString()}-${hour}`}
-                      day={day}
-                      hour={hour}
-                      events={eventsInSlot}
-                      onEventClick={handleEventClick}
-                    />
+                      className="relative"
+                    >
+                      <TimeSlot
+                        day={day}
+                        hour={hour}
+                        events={eventsInSlot}
+                        onEventClick={handleEventClick}
+                        onSlotClick={handleSlotClick}
+                      />
+                    </div>
                   );
                 })}
               </React.Fragment>
@@ -351,14 +385,6 @@ export function WeekView() {
           </div>
         </div>
       </div>
-
-      {selectedEvent && (
-        <EventForm
-          event={selectedEvent}
-          isOpen={true}
-          onClose={() => setSelectedEvent(null)}
-        />
-      )}
     </div>
   );
 }

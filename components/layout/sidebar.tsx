@@ -14,18 +14,34 @@ import { cn } from '@/lib/utils';
 import { EventDialog } from '../calendar/event-dialog';
 import { EventForm } from '../calendar/event-form';
 import { ToggleForm } from '../calendar/toggle-form';
+import type { Event } from '@/lib/types/database';
 
 interface SidebarProps {
   isLoggedIn?: boolean;
+  isEventFormOpen?: boolean;
+  eventToEdit?: Event | null;
+  defaultStartTime?: Date | null;
+  onCloseEventForm?: () => void;
+  activeTab?: 'calendars' | 'events';
+  setActiveTab?: (tab: 'calendars' | 'events') => void;
 }
 
-export function Sidebar({ isLoggedIn = false }: SidebarProps) {
+export function Sidebar({
+  isLoggedIn = false,
+  isEventFormOpen,
+  eventToEdit,
+  defaultStartTime,
+  onCloseEventForm,
+  activeTab,
+  setActiveTab,
+}: SidebarProps) {
   const [user] = useAtom(userAtom);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [isCustomizeCollapsed, setIsCustomizeCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState<'calendars' | 'events'>(
-    'calendars'
-  );
+
+  const [internalTab, setInternalTab] = useState<'calendars' | 'events'>('calendars');
+  const actualTab = activeTab ?? internalTab;
+  const updateTab = setActiveTab ?? setInternalTab;
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -53,13 +69,13 @@ export function Sidebar({ isLoggedIn = false }: SidebarProps) {
           'flex-1 bg-white rounded-lg overflow-hidden transition-all duration-300 flex flex-col'
         )}>
         <SidebarTabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
+          activeTab={actualTab}
+          onTabChange={updateTab}
         />
 
         <div className='flex-1 overflow-y-auto'>
           <div className='p-4'>
-            {activeTab === 'calendars' ? (
+            {actualTab === 'calendars' ? (
               <div className='space-y-4'>
                 {user ? (
                   <>
@@ -77,7 +93,7 @@ export function Sidebar({ isLoggedIn = false }: SidebarProps) {
                     </>
 
                     <>
-                    <button
+                      <button
                         onClick={() => setShowCalendars(prev => !prev)}
                         className="flex items-center gap-2 text-sm font-medium"
                       >
@@ -113,10 +129,14 @@ export function Sidebar({ isLoggedIn = false }: SidebarProps) {
                       </Button>
                     )}
                   </>
-                  <EventForm
-                    isOpen={isDialogOpen}
-                    onClose={closeDialog}
-                  />
+                  {actualTab === 'events' && isEventFormOpen && (
+                    <EventForm
+                      isOpen={isEventFormOpen}
+                      event={eventToEdit}
+                      defaultStartTime={defaultStartTime}
+                      onClose={onCloseEventForm ?? (() => { })}
+                    />
+                  )}
                 </>
               </div>
             )}
